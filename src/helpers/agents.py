@@ -19,10 +19,11 @@ def gemini_ai(front_img: Image.Image, rear_img: Image.Image, left_img: Image.Ima
             prompt  # or {"text": prompt}, depending on the SDK version
         ]
 
-        response = model.generate_content(contents=contents, stream=True)
-        for chunk in response:
-            yield chunk.text
+        response = model.generate_content(contents=contents, stream=False)
+
+        return response.text
 
     except Exception as e:
         print(f"Error during Gemini inference: {e}")
         return None
+    
