@@ -28,13 +28,15 @@ Your task is to analyze images of a vehicle taken from different angles and extr
 1. Vehicle Make
 2. Vehicle Model
 3. Manufacturing Year (must be between 2000 and 2023)
-4. Visible damages report in the images
+4. Vehicle Type (twowheeler, threewheeler, fourwheeler or other)
+5. Visible damages report in the images
 Respond only with a JSON object in the following format:
 ```json
 {{
   "make": "Vehicle Make",
   "model": "Vehicle Model",
   "Manufacturing_year_range": "Vehicle Year"
+  "vehicle_type": twowheeler/threewheeler/fourwheeler/other,
   "damages": "Description of visible damages"
 }}"""
 
