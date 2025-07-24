@@ -9,7 +9,7 @@ from json import loads
 from database.tables import Policy, Vehicle
 from database.tables import User
 
-from helpers.agents import gemini_ai
+from AI_ML.agents import verify_vehicle_images
 from helpers.file_handlers import Load, Extract
 from helpers.prompts import vehicle_details_extract_prompt as prompt
 
@@ -27,34 +27,34 @@ def clear_policy_session_state():
         if key in st.session_state:
             del st.session_state[key]
 
-def verify_vehicle_images(front, back, left, right,make,model,type,year):
-    front= Image.open(front)  
-    back = Image.open(back)
-    left = Image.open(left)
-    right = Image.open(right)
-    ex=Extract()
-  # Replace with the appropriate response value
-    response = gemini_ai(front, back, left, right, prompt)
-    verify = ex.extract_code(response)
-    # print(verify) 
-    result = loads(verify)
-    year_range = list(map(int,result['Manufacturing_year_range'].split('-')))
-    year_validity = False
-    if len(year_range) == 2:
-        year_validity = year_range[0] <= int(year) <= year_range[1]
-    else:
-        year_validity = year_range[0] <= int(year)
+# def verify_vehicle_images(front, back, left, right,make,model,type,year):
+#     front= Image.open(front)  
+#     back = Image.open(back)
+#     left = Image.open(left)
+#     right = Image.open(right)
+#     ex=Extract()
+#   # Replace with the appropriate response value
+#     response = gemini_ai(front, back, left, right, prompt)
+#     verify = ex.extract_code(response)
+#     # print(verify) 
+#     result = loads(verify)
+#     year_range = list(map(int,result['Manufacturing_year_range'].split('-')))
+#     year_validity = False
+#     if len(year_range) == 2:
+#         year_validity = year_range[0] <= int(year) <= year_range[1]
+#     else:
+#         year_validity = year_range[0] <= int(year)
 
-    if result['make'].lower() == make.lower() and result['model'].lower() == model.lower() and result['vehicle_type'].lower()==type.lower() and year_validity:
-        return [True, result]
-    else:
-        st.error("Vehicle details are not valid!")
-        print("result['make'].lower() == make.lower()", result['make'].lower(), make.lower())
-        print("result['model'].lower() == model.lower()", result['model'].lower(), model.lower())
-        print("result['vehicle_type'].lower() == type.lower()", result['vehicle_type'].lower(), type.lower())
-        print("year_validity", year_validity, year_range, year)
-        return [False,result]
-    # print(result, type(result)) # or simply print(response) to see the whole structure
+#     if result['make'].lower() == make.lower() and result['model'].lower() == model.lower() and result['vehicle_type'].lower()==type.lower() and year_validity:
+#         return [True, result]
+#     else:
+#         st.error("Vehicle details are not valid!")
+#         # print("result['make'].lower() == make.lower()", result['make'].lower(), make.lower())
+#         # print("result['model'].lower() == model.lower()", result['model'].lower(), model.lower())
+#         # print("result['vehicle_type'].lower() == type.lower()", result['vehicle_type'].lower(), type.lower())
+#         # print("year_validity", year_validity, year_range, year)
+#         return [False,result]
+#     # print(result, type(result)) # or simply print(response) to see the whole structure
     
     
 
@@ -127,10 +127,12 @@ def vehicle_info_tab():
     st.header("Vehicle Information")
     if st.session_state.add_policy_step >= 2:
         with st.form("vehicle_info_form"):
+            typeofvehicle = st.selectbox("Type of Vehicle *", ["fourwheeler", "threewheeler", "twowheeler", "other"], index=0)
             make = st.text_input("Vehicle Make *", value=st.session_state.vehicle_info.get("make", ""))
             model = st.text_input("Vehicle Model *", value=st.session_state.vehicle_info.get("model", ""))
             year_of_purchase = st.number_input("Year of Purchase *", min_value=1900, max_value=datetime.date.today().year, value=st.session_state.vehicle_info.get("year_of_purchase", datetime.date.today().year))
-            typeofvehicle = st.selectbox("Type of Vehicle *", ["fourwheeler", "threewheeler", "twowheeler", "other"], index=0)
+            chasis_no = st.text_input("Chassis Number", value=st.session_state.vehicle_info.get("chasis_no", ""))
+            vehicle_number = st.text_input("Vehicle Number", value=st.session_state.vehicle_info.get("vehicle_number", "")) 
             image_front = st.file_uploader("Upload Front Image", type=["png", "jpg", "jpeg"])
             image_back = st.file_uploader("Upload Back Image", type=["png", "jpg", "jpeg"])
             image_left = st.file_uploader("Upload Left Image", type=["png", "jpg", "jpeg"])

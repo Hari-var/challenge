@@ -1,6 +1,6 @@
 import os
 
-api=os.environ["gemini_API6"]
+api= "AIzaSyB54b40k_aL-vsn0qhGQaVG1b9Gbl2IKeE"
 
 vehicle_images_path =r"C:\practice\challenge\data\images"
 

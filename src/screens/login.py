@@ -29,12 +29,12 @@ def login_page():
                 user = None
                 for u in users:
                     # users table: user_id, usertype, username, firstname, middlename, lastname, password, dateofbirth, phone, email, address
-                    if u[2] == username:
+                    if u["username"] == username:
                         user = u
                         break
-                if user and user[6] == password:
+                if user and user["password"] == password:
                     st.session_state['logged_in'] = True  # Update login state
-                    st.session_state['user_id'] = user[0]  # Store user_id for later use
+                    st.session_state['user_id'] = user["user_id"]  # Store user_id for later use
                     st.success("Login successful! Redirecting...")
                     time.sleep(0.6)
                     st.rerun()  # Redirect to the main page
