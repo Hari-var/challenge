@@ -1,8 +1,9 @@
-from database.database import base
+from database.database import Base
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, CheckConstraint
 from sqlalchemy.orm import relationship
 
-class User(base):
+
+class User(Base):
     __tablename__ = "users"
 
     user_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -23,7 +24,7 @@ class User(base):
         CheckConstraint("usertype IN ('user', 'agent', 'admin')", name="user_type_check"),
     )
 
-class Policy(base):
+class Policy(Base):
     __tablename__ = "policies"
 
     policy_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -44,7 +45,7 @@ class Policy(base):
         CheckConstraint("status IN ('active', 'inactive', 'expired')", name="policy_status_check"),
     )
 
-class Vehicle(base):
+class Vehicle(Base):
     __tablename__ = "vehicles"
 
     vehicle_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -61,14 +62,16 @@ class Vehicle(base):
     policy = relationship("Policy", back_populates="vehicles")
     claims = relationship("Claims", back_populates="vehicle")
 
-class Claims(base):
+class Claims(Base):
     __tablename__ = "claims"
 
     claim_id = Column(Integer, primary_key=True, autoincrement=True)
     policy_id = Column(Integer, ForeignKey("policies.policy_id"), nullable=False)
     vehicle_id = Column(Integer, ForeignKey("vehicles.vehicle_id"), nullable=False)
     claim_number = Column(String, unique=True, nullable=False)
-    damage_description = Column(String, nullable=False)
+    damage_description_user = Column(String, nullable=False)
+    damage_description_llm = Column(String, nullable=False)
+    severity_level = Column(String, nullable=False)
     damage_percentage = Column(Float, nullable=False)
     damage_image_path = Column(String)
     date_of_incident = Column(DateTime, nullable=False)
@@ -76,7 +79,7 @@ class Claims(base):
     fir_no = Column(String, nullable=True) 
     claim_date = Column(DateTime, nullable=True)
     requested_amount = Column(Float, nullable=False)
-    approved_amount = Column(Float, nullable=True)
+    approvable_amount = Column(Float, nullable=True)
     claim_status = Column(String, nullable=False)
 
     policy = relationship("Policy", back_populates="claims")
@@ -84,4 +87,5 @@ class Claims(base):
 
     __table_args__ = (
         CheckConstraint("claim_status IN ('active', 'inactive', 'expired')", name="claim_status_check"),
+        CheckConstraint("severity_level IN ('Low', 'Moderate', 'High', 'Critical')", name="severity_level_check"),
     )

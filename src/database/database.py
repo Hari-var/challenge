@@ -1,7 +1,7 @@
 from helpers.config import SQLALCHEMY_DATABASE_URL
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, DeclarativeBase
 
 from fastapi import Depends # type: ignore
 from typing import Annotated 
@@ -14,7 +14,10 @@ engine = create_engine(
 
 sessionlocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-base = declarative_base()
+# base = declarative_base()
+
+class Base(DeclarativeBase):
+    pass
 
 def get_db():
     db = sessionlocal()

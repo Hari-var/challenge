@@ -1,4 +1,4 @@
-# FNOL (First Notice of Loss) Streamlit App
+# FNOL (First Notice of Loss)
 
 This project is a **First Notice of Loss (FNOL)** web application built with [Streamlit](https://streamlit.io/) and [FastAPI](https://fastapi.tiangolo.com/). It allows users to register, log in, and submit vehicle insurance claims by uploading vehicle images and entering policy details. The app uses AI (Gemini) to verify vehicle images and extract details.
 
@@ -158,7 +158,9 @@ challenge/
 | `policy_id`            | INTEGER   | No       | No          | `policies.policy_id`  | –                                      |
 | `vehicle_id`           | INTEGER   | No       | No          | `vehicles.vehicle_id` | –                                      |
 | `claim_number`         | TEXT      | No       | No          | –                     | UNIQUE                                 |
-| `damage_description`   | TEXT      | No       | No          | –                     | –                                      |
+| `damage_description_user`   | TEXT      | No       | No          | –                     | –                                      |
+| `damage_description_llm`   | TEXT      | No       | No          | –                     | –  
+| `severity_level`   | TEXT      | No       | No          | –                     | `IN ('Low', 'Moderate', 'High', 'Critical')`
 | `damage_percentage`    | REAL      | No       | No          | –                     | –                                      |
 | `damage_image_path`    | TEXT      | Yes      | No          | –                     | –                                      |
 | `date_of_incident`     | DATETIME  | No       | No          | –                     | –                                      |
@@ -166,7 +168,7 @@ challenge/
 | `fir_no`               | TEXT      | Yes      | No          | –                     | –                                      |
 | `claim_date`           | DATETIME  | Yes      | No          | –                     | –                                      |
 | `requested_amount`     | REAL      | No       | No          | –                     | –                                      |
-| `approved_amount`      | REAL      | Yes      | No          | –                     | –                                      |
+| `approvable_amount`      | REAL      | Yes      | No          | –                     | –                                      |
 | `claim_status`         | TEXT      | No       | No          | –                     | `IN ('active', 'inactive', 'expired')` |
 
 

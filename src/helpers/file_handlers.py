@@ -14,7 +14,8 @@ import re
 import pdfkit
 import io
 
-from .config import vehicle_images_path
+from helpers.config import vehicle_images_path
+
 
 # `print(os.environ['tesseract'])`
 class Extract():
@@ -69,8 +70,9 @@ class Transform():
             BytesIO: PDF file as a stream, or error message string if conversion fails.
         """
         try:
+            from helpers.config import wkhtlm
             # Path to wkhtmltopdf executable (adjust this according to your system)
-            wkhtmltopdf_path = r"C:\practice\wkhtmltox-0.12.6-1.mxe-cross-win64\wkhtmltox\bin\wkhtmltopdf.exe"
+            wkhtmltopdf_path = wkhtlm
             
             # Set pdfkit config
             config = pdfkit.configuration(wkhtmltopdf=wkhtmltopdf_path)
@@ -225,4 +227,7 @@ class email_handler():
 
 # Example usage:
 if __name__ == "__main__":
-    pass
+    x = Transform()
+    y=x.image_to_text(r"C:\practice\challenge\data\trail\download7.jpg")
+    print(y)
+    print(type(y))
