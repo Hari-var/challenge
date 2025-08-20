@@ -11,4 +11,14 @@ database_path = Path(os.environ["db_path"]).as_posix()
 
 SQLALCHEMY_DATABASE_URL = f"sqlite:///{database_path}"
 
+origins = [
+    "http://localhost:3000"
+]
+
 wkhtlm = Path(os.environ["wkhtml_tool_box"])
+
+basic_user = ['user']
+
+privilaged_user = ['agent', 'admin']
+
+administrator = ['admin']

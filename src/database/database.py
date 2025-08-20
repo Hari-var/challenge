@@ -7,6 +7,7 @@ from fastapi import Depends # type: ignore
 from typing import Annotated 
 from sqlalchemy.orm import Session
 
+
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False}
