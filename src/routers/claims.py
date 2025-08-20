@@ -1,26 +1,33 @@
-from fastapi import APIRouter, HTTPException# type: ignore
+from fastapi import APIRouter, HTTPException,Depends # type: ignore
 from pydantic import BaseModel
 from starlette import status# type: ignore
 
-from typing import Optional, Literal
+from typing import Annotated, Optional, Literal
+from datetime import date
 
 from database.database import db_dependency
 from database.model import Claims
 
+from routers.auth import get_current_user
+
 router = APIRouter(prefix="/claims", tags=["claims"])
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 class ClaimsRequest(BaseModel):
     policy_id: int
+    vehicle_id: int
     claim_number: str
-    damage_description: str
+    damage_description_user: str
+    damage_description_llm: str
+    severity_level: Literal["Low", "Moderate", "High", "Critical"]
     damage_percentage: float
     damage_image_path: Optional[str] = None
-    dete_of_incident: str
+    date_of_incident: date
     location_of_incident: Optional[str] = None
     fir_no: Optional[str] = None
-    claim_date: Optional[str] = None
+    claim_date: date
     requested_amount: float
-    approved_amount: Optional[float] = None
+    approvable_amount: Optional[float] = None
     
     claim_status: Literal["active", "inactive", "expired"]
 

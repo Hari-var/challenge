@@ -1,21 +1,26 @@
-from fastapi import APIRouter, HTTPException# type: ignore
+from fastapi import APIRouter, HTTPException, Depends # type: ignore
 from pydantic import BaseModel
 from starlette import status# type: ignore
 
-from typing import Literal
+from typing import Annotated, Literal, Optional
 from database.database import db_dependency
 from database.model import Policy
+from helpers.config import basic_user, privilaged_user, administrator
+
+from routers.auth import get_current_user
 
 router = APIRouter(prefix="/policies", tags=["policies"])
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 class PolicyRequest(BaseModel):
-    policy_number: str
-    policy_holder: str
-    user_id: int
-    start_date: str
-    end_date: str
-    premium: float
-    status: Literal["active", "inactive", "expired"]
+    policy_number: Optional[str] = None
+    policy_holder: Optional[str] = None
+    user_id: Optional[str] = None
+    start_date: Optional[str] = None
+    end_date: Optional[str] = None
+    premium: Optional[str] = None
+    total_claimable_amount: Optional[str] = None
+    status: Optional[Literal["active", "inactive", "expired"]] = None
 
     model_config = {
         "from_attributes": True
@@ -47,7 +52,8 @@ async def update_policy(db: db_dependency, policy_id: int, policy_request: Polic
         raise HTTPException(status_code=404, detail="Policy not found")
     
     for key, value in policy_request.model_dump().items():
-        setattr(policy, key, value)
+        if value is not None:
+            setattr(policy, key, value)
     
     db.commit()
     return {"message": "Policy updated successfully"}

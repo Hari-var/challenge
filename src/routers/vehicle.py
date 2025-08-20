@@ -1,11 +1,15 @@
-from fastapi import APIRouter, HTTPException # type: ignore
+from typing import Annotated
+from fastapi import APIRouter, HTTPException, Depends # type: ignore
 from pydantic import BaseModel
 from starlette import status # type: ignore
 
 from database.database import db_dependency
 from database.model import Vehicle
 
+from routers.auth import get_current_user
+
 router = APIRouter(prefix="/vehicles", tags=["vehicles"])
+user_dependency = Annotated[dict, Depends(get_current_user)]
 
 class VehicleRequest(BaseModel):
     policy_id: int
@@ -14,6 +18,8 @@ class VehicleRequest(BaseModel):
     make: str
     model: str
     year_of_purchase: int
+    chasis_no: str
+    vehicle_no: str
     damage_report: str | None = None
 
     model_config = {
