@@ -1,5 +1,5 @@
 from datetime import timedelta, datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, status, Response # type: ignore
+from fastapi import APIRouter, Depends, HTTPException, status, Response, Request # type: ignore
 from fastapi.security import OAuth2PasswordRequestForm, OAuth2PasswordBearer #type: ignore
 from pydantic import BaseModel# type: ignore
 from database.database import db_dependency
@@ -11,11 +11,9 @@ from json import load
 from passlib.context import CryptContext #type: ignore
 from jose import jwt #type: ignore
 from jose.exceptions import JWTError #type: ignore
+from helpers.config import SECRET_KEY, ALGORITHM
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
-
-SECRET_KEY = '4b6850b91f5ba7c307b461150fb713fa84e134791539c52cba3653b29290db52'
-ALGORITHM = 'HS256'
 
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl = 'auth/token')
@@ -25,7 +23,7 @@ class Token(BaseModel):
     token_type:str
 
 def authenticate_user(db, username: str, password: str):
-    user= db.query(User).filter(User.username == username).first()
+    user= db.query(User).filter((User.username == username) | (User.email == username)).first()
     if not user:
         return False
     if not bcrypt_context.verify(password, user.hashed_password):
@@ -38,15 +36,16 @@ def create_access_token(username:str, user_id: int, role:str, expires_delta: tim
     encode.update({'exp': expires})
     return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
-    if token is None:
-        # Try reading from cookies
-        token = request.cookies.get("access_token_fnol")
-    if token is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+async def get_current_user(request: Request):
+    
+    raw_token = request.cookies.get("access_token_fnol")
 
+    if not raw_token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    # print("Decoded token source:", "Authorization header" if token else "Cookie")
+    # print("Raw token:", raw_token)
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(raw_token, SECRET_KEY, algorithms=[ALGORITHM])
         username = payload.get('sub')
         user_id = payload.get('user_id')
         role = payload.get('role')
@@ -58,8 +57,8 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
         raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,
                                 detail='Could not validete user')
 
-@router.post("/token", response_model=Token)
-async def auth(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency, response: Response):
+@router.post("/token")
+async def auth( form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency, response: Response, remember: bool = False):
     user = authenticate_user(db , form_data.username, form_data.password)
     if not user:
         raise HTTPException(
@@ -67,14 +66,31 @@ async def auth(form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: d
             detail="Invalid credentials"
         )
     token = create_access_token(user.username, user.user_id, user.usertype, timedelta(minutes=30)) #type: ignore
-    response.set_cookie(
+    if remember:
+        response.set_cookie(
         key="access_token_fnol",
         value=token,
         httponly=True,       # prevents JavaScript access (safer)
-        max_age=1800,        # 30 minutes
-        expires=1800,
-        secure=True,         # use HTTPS in production
-        samesite="Lax"
-    )
+        secure=False,         # use HTTPS in production
+        samesite="lax" 
+         
+        )
+    else:
+        response.set_cookie(
+            key="access_token_fnol",
+            value=token,
+            httponly=True,       # prevents JavaScript access (safer)
+            max_age=1800,        # 30 minutes
+            expires=1800,
+            secure=False,         # use HTTPS in production
+            samesite="lax" 
+            
+        )
 
-    return {'access_token': token, 'token_type': 'bearer'}
+    return {"message": "Logged in successfully"}
+
+@router.post("/logout")
+async def logout(response: Response):
+
+    response.delete_cookie("access_token_fnol")
+    return {"message": "Logged out successfully"}

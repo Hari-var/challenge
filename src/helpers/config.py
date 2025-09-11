@@ -19,6 +19,14 @@ wkhtlm = Path(os.environ["wkhtml_tool_box"])
 
 basic_user = ['user']
 
-privilaged_user = ['agent', 'admin']
+privilaged_user = ['agent','admin']
 
 administrator = ['admin']
+
+admin_username = os.getenv("DEFAULT_ADMIN_USERNAME")
+
+admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD") 
+
+SECRET_KEY = '4b6850b91f5ba7c307b461150fb713fa84e134791539c52cba3653b29290db52'
+
+ALGORITHM = 'HS256'

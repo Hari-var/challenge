@@ -1,5 +1,6 @@
+from datetime import datetime
 from database.database import Base
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, CheckConstraint
+from sqlalchemy import JSON, Column, Integer, String, Date, ForeignKey, Float, CheckConstraint, DateTime
 from sqlalchemy.orm import relationship
 
 
@@ -13,8 +14,8 @@ class User(Base):
     middlename = Column(String)
     lastname = Column(String, nullable=False)
     hashed_password = Column(String, nullable=False)
-    dateofbirth = Column(DateTime, nullable=False)
-    phone = Column(String)
+    dateofbirth = Column(Date, nullable=False)
+    phone = Column(String, unique=True)
     email = Column(String, unique=True, nullable=False)
     address = Column(String)
 
@@ -23,69 +24,129 @@ class User(Base):
     __table_args__ = (
         CheckConstraint("usertype IN ('user', 'agent', 'admin')", name="user_type_check"),
     )
+    @property
+    def dob_str(self):
+        if self.dateofbirth is not None:
+            return self.dateofbirth.strftime("%Y-%m-%d")
+        return None
+
+from sqlalchemy import event, select, func
+
+
 
 class Policy(Base):
     __tablename__ = "policies"
 
     policy_id = Column(Integer, primary_key=True, autoincrement=True)
     policy_number = Column(String, unique=True, nullable=False)
-    policy_holder = Column(String, nullable=False)
+    # policy_holder = Column(String, nullable=False)
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"))
-    start_date = Column(String, nullable=False)
-    end_date = Column(String, nullable=False)
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date, nullable=False)
     premium = Column(Float, nullable=False)
-    total_claimable_amount = Column(Float, nullable=False)
+    coverage_amount = Column(Float, nullable=False)
     status = Column(String, nullable=False)
 
     user = relationship("User", back_populates="policies")
-    vehicles = relationship("Vehicle", back_populates="policy")
-    claims = relationship("Claims", back_populates="policy")
+    insurables = relationship("Insurable", back_populates="policy", cascade="all, delete")
+    claims = relationship(
+        "Claims",
+        back_populates="policy",
+        cascade="all, delete-orphan"   # same for claims
+    )
 
     __table_args__ = (
         CheckConstraint("status IN ('active', 'inactive', 'expired')", name="policy_status_check"),
     )
+    @property
+    def policy_holder(self):
+        # Safely handle missing middle name
+        parts = [self.user.firstname, self.user.middlename, self.user.lastname]
+        return " ".join(filter(None, parts))
 
-class Vehicle(Base):
+@event.listens_for(Policy, "before_insert")
+def generate_policy_number(mapper, connection, target):
+    today_str = datetime.now().strftime("%Y%m%d")
+
+    # Count policies created today efficiently
+    result = connection.execute(
+        select(func.count()).where(Policy.policy_number.like(f"POL-{today_str}%"))
+    )
+    count_today = result.scalar_one()
+
+    target.policy_number = f"POL-{today_str}{count_today + 1:03d}"
+
+class Insurable(Base):
+    __tablename__ = "insurable"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    type = Column(String, nullable=False)  # e.g., 'vehicle', 'health', 'property'
+    policy_id = Column(Integer, ForeignKey("policies.policy_id", ondelete="CASCADE"), nullable=False)
+    image_path = Column(String)
+
+    policy = relationship("Policy", back_populates="insurables")
+    claims = relationship("Claims", back_populates="subject")
+
+    __mapper_args__ = {
+        "polymorphic_identity": "insurable",
+        "polymorphic_on": type
+    }
+
+class Vehicle(Insurable):
     __tablename__ = "vehicles"
 
-    vehicle_id = Column(Integer, primary_key=True, autoincrement=True)
-    policy_id = Column(Integer, ForeignKey("policies.policy_id", ondelete="CASCADE"), nullable=False)
+    vehicle_id = Column(Integer, ForeignKey("insurable.id", ondelete="CASCADE"), primary_key=True)
     typeofvehicle = Column(String, nullable=False)
-    image_path = Column(String)
     make = Column(String, nullable=False)
     model = Column(String, nullable=False)
     year_of_purchase = Column(Integer, nullable=False)
-    chasis_no = Column(String, nullable=False)
-    vehicle_no= Column(String, nullable=False)
+    vin = Column(String, nullable=False)
+    vehicle_no = Column(String, nullable=False)
     damage_report = Column(String)
 
-    policy = relationship("Policy", back_populates="vehicles")
-    claims = relationship("Claims", back_populates="vehicle")
+    __mapper_args__ = {
+        "polymorphic_identity": "vehicle"
+    }
+
+
 
 class Claims(Base):
     __tablename__ = "claims"
 
     claim_id = Column(Integer, primary_key=True, autoincrement=True)
     policy_id = Column(Integer, ForeignKey("policies.policy_id"), nullable=False)
-    vehicle_id = Column(Integer, ForeignKey("vehicles.vehicle_id"), nullable=False)
+    subject_id = Column(Integer, ForeignKey("insurable.id"), nullable=False)
     claim_number = Column(String, unique=True, nullable=False)
     damage_description_user = Column(String, nullable=False)
     damage_description_llm = Column(String, nullable=False)
     severity_level = Column(String, nullable=False)
     damage_percentage = Column(Float, nullable=False)
-    damage_image_path = Column(String)
-    date_of_incident = Column(DateTime, nullable=False)
+    damage_image_path = Column(String, nullable=False)
+    date_of_incident = Column(Date, nullable=False)
     location_of_incident = Column(String, nullable=False)
+    documents_path = Column(String)
     fir_no = Column(String, nullable=True) 
-    claim_date = Column(DateTime, nullable=True)
+    claim_date = Column(Date, nullable=True)
     requested_amount = Column(Float, nullable=False)
     approvable_amount = Column(Float, nullable=True)
     claim_status = Column(String, nullable=False)
 
     policy = relationship("Policy", back_populates="claims")
-    vehicle = relationship("Vehicle", back_populates="claims")
+    subject = relationship("Insurable", back_populates="claims")
 
     __table_args__ = (
         CheckConstraint("claim_status IN ('active', 'inactive', 'expired')", name="claim_status_check"),
         CheckConstraint("severity_level IN ('Low', 'Moderate', 'High', 'Critical')", name="severity_level_check"),
     )
+@event.listens_for(Claims, "before_insert")
+def generate_claim_number(mapper, connection, target):
+    today_str = datetime.now().strftime("%Y%m%d")
+
+    # Count claims created today efficiently
+    result = connection.execute(
+        select(func.count()).where(Claims.claim_number.like(f"CLAIM-{today_str}%"))
+    )
+    count_today = result.scalar_one()
+
+    target.claim_number = f"CLAIM-{today_str}{count_today + 1:03d}"
+
+

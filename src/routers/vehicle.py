@@ -18,13 +18,15 @@ class VehicleRequest(BaseModel):
     make: str
     model: str
     year_of_purchase: int
-    chasis_no: str
+    vin: str
     vehicle_no: str
     damage_report: str | None = None
 
     model_config = {
         "from_attributes": True
     }
+class VehicleResponse(VehicleRequest):
+    vehicle_id: int
 
 @router.get("/vehicle_details")
 async def read_all_vehicles(db: db_dependency):
