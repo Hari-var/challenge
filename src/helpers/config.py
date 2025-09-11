@@ -27,6 +27,8 @@ admin_username = os.getenv("DEFAULT_ADMIN_USERNAME")
 
 admin_password = os.getenv("DEFAULT_ADMIN_PASSWORD") 
 
-SECRET_KEY = '4b6850b91f5ba7c307b461150fb713fa84e134791539c52cba3653b29290db52'
+secret_key = os.getenv("SECRET_KEY").strip(" ") #type: ignore
 
-ALGORITHM = 'HS256'
+algorithm = os.getenv("ALGORITHM").strip(" ") #type: ignore
+
+print(f"Secret Key: {secret_key}, Algorithm: {algorithm}")

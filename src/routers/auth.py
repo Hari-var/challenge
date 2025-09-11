@@ -11,7 +11,7 @@ from json import load
 from passlib.context import CryptContext #type: ignore
 from jose import jwt #type: ignore
 from jose.exceptions import JWTError #type: ignore
-from helpers.config import SECRET_KEY, ALGORITHM
+from helpers.config import secret_key, algorithm
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
@@ -34,7 +34,7 @@ def create_access_token(username:str, user_id: int, role:str, expires_delta: tim
     encode = {'sub': username, 'user_id': user_id, 'role': role}
     expires = datetime.now(timezone.utc) + expires_delta
     encode.update({'exp': expires})
-    return jwt.encode(encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(encode, secret_key, algorithm=algorithm)
 
 async def get_current_user(request: Request):
     
@@ -45,7 +45,7 @@ async def get_current_user(request: Request):
     # print("Decoded token source:", "Authorization header" if token else "Cookie")
     # print("Raw token:", raw_token)
     try:
-        payload = jwt.decode(raw_token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(raw_token, secret_key, algorithms=[algorithm])
         username = payload.get('sub')
         user_id = payload.get('user_id')
         role = payload.get('role')
