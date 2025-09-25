@@ -1,18 +1,17 @@
 from fastapi import FastAPI   # type: ignore
 import database.model as model
 from database.database import engine,sessionlocal
-from routers import auth, policy, vehicle, user, llmRoute, claims
+from routers import auth, policy, vehicle, user, llmRoute, claims, insurables
 from fastapi.middleware.cors import CORSMiddleware #type: ignore
 from helpers.config import origins
 from database.model import User
 # import os
-from helpers.config import admin_username, admin_password
+from helpers.config import admin_username, admin_password, PROFILE_UPLOAD_DIR
 from passlib.context import CryptContext #type: ignore
 from datetime import date
 
 app = FastAPI()
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 
 app.add_middleware(
@@ -27,6 +26,8 @@ app.include_router(user.router)
 
 app.include_router(policy.router)
 
+app.include_router(insurables.router)
+
 app.include_router(vehicle.router)
 
 app.include_router(claims.router)
@@ -36,9 +37,7 @@ app.include_router(llmRoute.router)
 app.include_router(auth.router)
 
 
-
-
-model.Base.metadata.create_all(bind=engine) # type: ignore 
+model.Base.metadata.create_all(bind=engine) # type: ignore
 
 
 def init_admin():
