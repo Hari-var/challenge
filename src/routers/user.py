@@ -300,7 +300,7 @@ def get_profile_pic(user_id: int, db: db_dependency, user: user_dependency):
         if not insuree:
             raise HTTPException(status_code=404, detail="User not found")
 
-        if not insuree.profile_pic: # Use direct check for None or empty string
+        if not insuree.profile_pic: # Use direct check for None or empty string #type:ignore
             raise HTTPException(status_code=404, detail="Profile picture not found")
 
         img_path = Path(PROFILE_UPLOAD_DIR) / insuree.profile_pic
