@@ -21,7 +21,6 @@ class insurableResponse(BaseModel):
     id: int
     type: str
     policy_id: int
-    image_path: Optional[str] = None
 
     model_config = {
         "from_attributes": True
@@ -57,12 +56,13 @@ class PolicyRequest(BaseModel):
     end_date: date
     premium: float
     coverage_amount: float
-    status: Literal["active", "inactive", "expired"] 
+    status: Literal['under-review', "active", "inactive", "expired"]
 
     model_config = {
         "from_attributes": True
     }
-
+# class AdminPolicyRequest(PolicyRequest):
+    
 class PolicyUpdateRequest(BaseModel):
     policy_number: Optional[str] = None
     # policy_holder: Optional[str] = None
@@ -71,7 +71,7 @@ class PolicyUpdateRequest(BaseModel):
     end_date: Optional[date] = None
     premium: Optional[str] = None
     total_claimable_amount: Optional[str] = None
-    status: Optional[Literal["active", "inactive", "expired"]] = None
+    status: Optional[Literal["active", "inactive", "expired", 'under-review']] = None
 
     model_config = {
         "from_attributes": True
@@ -79,7 +79,7 @@ class PolicyUpdateRequest(BaseModel):
 
 
 # ----------------------------------------Applied RBAC ----------------------------------------------------
-@router.get("/policy_details", response_model = list[PolicyListResponse])
+@router.get("/policy_details_all", response_model = list[PolicyListResponse])
 async def read_all_policies(user: user_dependency, db: db_dependency):
     if user is None:
         raise HTTPException(
@@ -129,42 +129,200 @@ async def read_all_policies(user: user_dependency, db: db_dependency):
     
 @router.post("/policy_details", status_code=status.HTTP_201_CREATED)
 async def create_policy(user: user_dependency,db: db_dependency, policy_request: PolicyRequest):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
     if user.get('role') in privilaged_user:
         policy_model = Policy(**policy_request.model_dump())
         # policy_model.user_id = int(user.get("user_id")) #type: ignore
         db.add(policy_model)
         db.commit()
-        return {"message": "Policy created successfully"}
+        return {"message": "Policy created successfully",
+                "policy_id": policy_model.policy_id,
+                "policy_number": policy_model.policy_number}
     else:
         raise HTTPException(status_code=403, detail="Operation not permitted")
-    
-@router.get("/policy_details/{policy_id}", response_model = PolicyResponse)
-async def read_policy(user1: user_dependency, db: db_dependency, policy_id:int):
-    if user1 is None:
+@router.get("/policy_numbers/{user_id}")
+async def get_policy_numbers(
+    user: user_dependency,
+    db: db_dependency,
+    user_id: int
+):
+    if user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
         )
-    # try:
-    policy = db.query(Policy).filter(Policy.policy_id == policy_id).first()
-    if policy is not None:
-        if user1.get('role') in privilaged_user or policy.user_id == user1.get('user_id'):
-            return {
-                "policy_id": policy.policy_id,
-                "policy_number": policy.policy_number,
-                "policy_holder": policy.policy_holder,
-                "start_date": policy.start_date,
-                "end_date": policy.end_date,
-                "premium": policy.premium,
-                "coverage_amount": policy.coverage_amount,
-                "status": policy.status,
-                "insurable_details":  policy.insurables,
-                "filed_claims": policy.claims,
-                "user": policy.user,
-            }
-    raise HTTPException(status_code=404, detail="Policy not found")
-    # except Exception as e:
-    #     raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+
+    role = user.get("role")
+
+    try:
+        # Privileged user requesting all policies
+        if user_id == 0:
+            if role in privilaged_user:
+                policies = db.query(Policy).where(Policy.status == "active")
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Operation not permitted"
+                )
+        # Basic user requesting own policies
+        elif role in basic_user or privilaged_user:
+            policies = db.query(Policy).filter(Policy.user_id == user_id).where(Policy.status == "active")
+        else:
+            # Non-basic, non-privileged user
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Operation not permitted"
+            )
+
+        # Return only necessary fields
+        return [
+            {"policy_id": p.policy_id, "policy_number": p.policy_number}
+            for p in policies
+        ]
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred: {str(e)}",
+        )
+@router.get("/policy_details/{policy_id}")
+async def get_policy_details(
+    user: user_dependency,
+    db: db_dependency,
+    policy_id: int
+):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+
+    try:
+        policy = db.query(Policy).filter(Policy.policy_id == policy_id).first()
+        if policy is None:
+            raise HTTPException(status_code=404, detail="Policy not found")
+
+        if user.get('role') not in privilaged_user and policy.user_id != user.get('user_id'):
+            raise HTTPException(status_code=403, detail="Not authorized")
+
+        return {
+            "policy_id": policy.policy_id,
+            "policy_number": policy.policy_number,
+            "policy_holder": policy.policy_holder,
+            "start_date": policy.start_date,
+            "end_date": policy.end_date,
+            "premium": policy.premium,
+            "coverage_amount": policy.coverage_amount,
+            "status": policy.status,
+            "insurable_details": [insurableResponse.model_validate(ins) for ins in policy.insurables],
+            "filed_claims": [ClaimsResponse.model_validate(claim) for claim in policy.claims],
+            "user": UserResponse.model_validate(policy.user),
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An error occurred: {str(e)}",
+        )
+@router.get("/policy_details", response_model=PolicyResponse)
+async def read_policy(
+    user: user_dependency,
+    db: db_dependency,
+    policy_id: Optional[int] = None,
+    policy_number: Optional[str] = None
+):
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credentials"
+        )
+    if policy_id is not None:
+        policy = db.query(Policy).filter(Policy.policy_id == policy_id).first()
+    elif policy_number is not None:
+        policy = db.query(Policy).filter(Policy.policy_number == policy_number).first()
+    else:
+        raise HTTPException(status_code=400, detail="Provide either policy_id or policy_number")
+    if policy is None:
+        raise HTTPException(status_code=404, detail="Policy not found")
+    if user.get('role') not in privilaged_user and policy.user_id != user.get('user_id'):
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return {
+        "policy_id": policy.policy_id,
+        "policy_number": policy.policy_number,
+        "policy_holder": policy.policy_holder,
+        "start_date": policy.start_date,
+        "end_date": policy.end_date,
+        "premium": policy.premium,
+        "coverage_amount": policy.coverage_amount,
+        "status": policy.status,
+        "insurable_details": [insurableResponse.model_validate(ins) for ins in policy.insurables],
+        "filed_claims": [ClaimsResponse.model_validate(claim) for claim in policy.claims],
+        "user": UserResponse.model_validate(policy.user),
+    }
+    
+# @router.get("/policy_details/{policy_id}", response_model = PolicyResponse)
+# async def read_policy(user1: user_dependency, db: db_dependency, policy_id:int):
+#     if user1 is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Invalid credentials"
+#         )
+#     try:
+#         policy = db.query(Policy).filter(Policy.policy_id == policy_id).first()
+#         if policy is not None:
+#             if user1.get('role') in privilaged_user or policy.user_id == user1.get('user_id'):
+#                 return {
+#                     "policy_id": policy.policy_id,
+#                     "policy_number": policy.policy_number,
+#                     "policy_holder": policy.policy_holder,
+#                     "start_date": policy.start_date,
+#                     "end_date": policy.end_date,
+#                     "premium": policy.premium,
+#                     "coverage_amount": policy.coverage_amount,
+#                     "status": policy.status,
+#                     "insurable_details":  policy.insurables,
+#                     "filed_claims": policy.claims,
+#                     "user": policy.user,
+#                 }
+#         raise HTTPException(status_code=404, detail="Policy not found")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
+    
+# @router.get("/policy_details/{policy_number}", response_model = PolicyResponse)
+# async def read_policy(user1: user_dependency, db: db_dependency, policy_number:str):
+#     if user1 is None:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Invalid credentials"
+#         )
+#     try:
+#         policy = db.query(Policy).filter(Policy.policy_number == policy_number).first()
+#         if policy is not None:
+#             if user1.get('role') in privilaged_user or policy.user_id == user1.get('user_id'):
+#                 return {
+#                     "policy_id": policy.policy_id,
+#                     "policy_number": policy.policy_number,
+#                     "policy_holder": policy.policy_holder,
+#                     "start_date": policy.start_date,
+#                     "end_date": policy.end_date,
+#                     "premium": policy.premium,
+#                     "coverage_amount": policy.coverage_amount,
+#                     "status": policy.status,
+#                     "insurable_details":  policy.insurables,
+#                     "filed_claims": policy.claims,
+#                     "user": policy.user,
+#                 }
+#         raise HTTPException(status_code=404, detail="Policy not found")
+#     except Exception as e:
+#         raise HTTPException(status_code=500, detail=f"An error occurred: {str(e)}")
     
 @router.delete("/policy_details/{policy_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_policy(user: user_dependency, db: db_dependency, policy_id: int):
