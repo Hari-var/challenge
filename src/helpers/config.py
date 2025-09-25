@@ -9,7 +9,27 @@ vehicle_images_path = Path(os.environ["images_path"])
 
 database_path = Path(os.environ["db_path"]).as_posix()
 
-SQLALCHEMY_DATABASE_URL = f"sqlite:///{database_path}"
+SQLALCHEMY_DATABASE_URL_LITE = f"sqlite:///{database_path}"
+
+local_pipe = "LOCALDB#BEEA3B89"
+
+SQLALCHEMY_DATABASE_URL_MASTER = (
+    r"Driver={ODBC Driver 17 for SQL Server};"
+    fr"Server=np:\\.\pipe\{local_pipe}\tsql\query;"
+    r"Database=master;"
+    r"Trusted_Connection=yes;"
+)
+
+SQLALCHEMY_DATABASE_URL_POLICY = (
+    r"Driver={ODBC Driver 17 for SQL Server};"
+    fr"Server=np:\\.\pipe\{local_pipe}\tsql\query;"
+    r"Database=policy;"
+    r"Trusted_Connection=yes;"
+)
+
+Cloud_db = os.getenv("cloud_db")
+
+
 
 origins = [
     "http://localhost:3000"
@@ -31,4 +51,20 @@ secret_key = os.getenv("SECRET_KEY").strip(" ") #type: ignore
 
 algorithm = os.getenv("ALGORITHM").strip(" ") #type: ignore
 
-print(f"Secret Key: {secret_key}, Algorithm: {algorithm}")
+PROFILE_UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR")) #type: ignore
+
+pc_ack = os.getenv("pcloud_access_key")
+
+pc_sec = os.getenv("pcloud_secret_key")
+
+bucket_name = os.getenv("pcloud_bucket")
+
+sub_dom = os.getenv("pcloud_subdomain")
+
+megamail = os.getenv("mega_email")
+
+megapwd = os.getenv("mega_pwd")
+
+b2appkey = os.getenv("b2_appkey")
+
+b2appid = os.getenv("b2_appkey_id")

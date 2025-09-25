@@ -1,20 +1,26 @@
 import os
+from pathlib import Path
+from typing import Optional
 from PIL import Image
 import pytesseract
+from fastapi import UploadFile #type: ignore
+import shutil
+
 # pytesseract.pytesseract.tesseract_cmd = os.environ['tesseract']
 
-from PyPDF2 import PdfReader
-from docx import Document
-import pdfplumber
+from PyPDF2 import PdfReader #type: ignore
+from docx import Document #type: ignore
+import pdfplumber #type: ignore
 
-from independentsoft.msg import Message
-from independentsoft.msg import Attachment
+from independentsoft.msg import Message #type: ignore
+from independentsoft.msg import Attachment #type: ignore
 
 import re
-import pdfkit
+import pdfkit #type: ignore
 import io
 
 from helpers.config import vehicle_images_path
+
 
 
 # `print(os.environ['tesseract'])`
@@ -133,46 +139,82 @@ class Transform():
             raise ValueError(f"Unsupported file type: {ext}")
     
 
-class Load():
-    def save_vehicle_images(self,front_img, back_img, left_img, right_img, folder_name,typeofvehicle):
+class Load:
+    async def save_vehicle_images(
+        self,
+        front_img: UploadFile,
+        back_img: UploadFile,
+        left_img: UploadFile,
+        right_img: UploadFile,
+        folder_name: str,
+        typeofvehicle: str
+    ):
         """
         Save four vehicle images (front, back, left, right) in a new folder under vehicle_images.
-
-        Args:
-            front_img, back_img, left_img, right_img: Uploaded file objects (e.g., from Streamlit file_uploader).
-            folder_name (str): Name of the folder to create for saving images.
-
-        Returns:
-            dict: Paths to the saved images.
         """
+
         base_path = vehicle_images_path
-        save_folder = os.path.join(base_path,typeofvehicle, folder_name)
+        save_folder = os.path.join(base_path, typeofvehicle, folder_name)
         os.makedirs(save_folder, exist_ok=True)
 
-        paths = {}
-        paths["main_folder"] = save_folder
-        if front_img:
-            front_path = os.path.join(save_folder, "front.jpg")
-            with open(front_path, "wb") as f:
-                f.write(front_img.getbuffer())
-            paths["front"] = front_path
-        if back_img:
-            back_path = os.path.join(save_folder, "back.jpg")
-            with open(back_path, "wb") as f:
-                f.write(back_img.getbuffer())
-            paths["back"] = back_path
-        if left_img:
-            left_path = os.path.join(save_folder, "left.jpg")
-            with open(left_path, "wb") as f:
-                f.write(left_img.getbuffer())
-            paths["left"] = left_path
-        if right_img:
-            right_path = os.path.join(save_folder, "right.jpg")
-            with open(right_path, "wb") as f:
-                f.write(right_img.getbuffer())
-            paths["right"] = right_path
+        paths: dict[str, Optional[str]] = {"main_folder": save_folder}
+
+        # Helper to save each image
+        async def save_image(upload_file: UploadFile, name: str):
+            if upload_file:
+                file_path = os.path.join(save_folder, f"{name}.jpg")
+                with open(file_path, "wb") as f:
+                    shutil.copyfileobj(upload_file.file, f)
+                return file_path
+            return None
+
+        paths["front"] = await save_image(front_img, "front")
+        paths["back"] = await save_image(back_img, "back")
+        paths["left"] = await save_image(left_img, "left")
+        paths["right"] = await save_image(right_img, "right")
 
         return paths
+
+
+
+    async def _save_files(self, folder_name: str,subfolder:str, prefix: str, *files: UploadFile):
+        """
+        Generic method to save multiple files under a specified subfolder.
+        """
+        base_path = r"C:\practice\challenge\data\claims"
+        save_folder = Path(base_path, folder_name, subfolder)
+        os.makedirs(save_folder, exist_ok=True)
+
+        saved_paths = []
+
+        for idx, file in enumerate(files):
+            if file:
+                # Extract safe extension
+                _, ext = os.path.splitext(file.filename or "")
+                ext = ext if ext else ".bin"  # fallback if no extension
+
+                file_path = os.path.join(save_folder, f"{prefix}_{idx + 1}{ext}")
+                
+                # Async safe: read file and write in chunks
+                with open(file_path, "wb") as f:
+                    content = await file.read()
+                    f.write(content)
+
+                saved_paths.append(str(file_path))
+
+        return saved_paths
+
+    async def save_claim_images(self, folder_name: str, *images: UploadFile):
+        """
+        Save multiple claim images in a new folder under claim_images.
+        """
+        return await self._save_files(folder_name, "claim_images", "claim_image", *images)
+
+    async def save_documents(self, folder_name: str, *documents: UploadFile):
+        """
+        Save multiple documents in a new folder under documents.
+        """
+        return await self._save_files(folder_name, "documents", "document", *documents)
     
 
 class email_handler():

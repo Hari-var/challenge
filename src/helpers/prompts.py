@@ -106,7 +106,7 @@ Your output should be a well-structured JSON object in the following format:
 ```json
 {{
     "damage_analysis": "Brief analysis of the nature and severity of the damage",
-    "damage_percentage": "Estimated percentage of vehicle damaged (e.g., 35%)",
+    "damage_percentage": "Estimated percentage of vehicle damaged (e.g., 35%)"[note: only numeric],
     "severity_level": "Low | Moderate | High | Critical",
     "approvable_amount": float in rupees,
     "reason_for_approval": "Justification for the approved amount",
@@ -131,5 +131,7 @@ Respond only with a JSON object in the following format:
   "Manufacturing_year_range": "Vehicle Year"
   "vehicle_type": twowheeler/threewheeler/fourwheeler/other,
   "damages": "Description of visible damages"
-}}"""
+}}```
+"""
+
 
