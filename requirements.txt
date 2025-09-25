@@ -2,7 +2,7 @@ streamlit==1.42.0
 fastapi==0.111.0
 uvicorn==0.29.0
 SQLAlchemy==2.0.37
-pillow==10.3.0
+pillow==11.1.0
 requests==2.32.3
 python-dotenv==1.0.1
 PyPDF2==3.0.1
@@ -12,4 +12,9 @@ independentsoft.msg==1.0.0
 pdfkit==1.0.0
 typing_extensions==4.12.2
 pydantic==2.10.6
-pillow==11.1.0
+pytesseract==0.3.10
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+python-multipart==0.0.6
+google-generativeai==0.8.3
+starlette==0.37.2
