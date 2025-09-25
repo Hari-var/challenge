@@ -58,36 +58,53 @@ async def get_current_user(request: Request):
                                 detail='Could not validete user')
 
 @router.post("/token")
-async def auth( form_data: Annotated[OAuth2PasswordRequestForm, Depends()], db: db_dependency, response: Response, remember: bool = False):
+async def auth(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    db: db_dependency,
+    response: Response,
+    remember: bool = False
+):
     user = authenticate_user(db , form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
         )
-    token = create_access_token(user.username, user.user_id, user.usertype, timedelta(minutes=30)) #type: ignore
+
+    # 🔑 Adjust expiry based on remember
+    if remember:
+        expires = timedelta(days=30)   # "remember me" = 30 days
+    else:
+        expires = timedelta(minutes=30)
+
+    token = create_access_token(user.username, user.user_id, user.usertype, expires) #type: ignore
+
+    # 🔒 Set cookie
     if remember:
         response.set_cookie(
-        key="access_token_fnol",
-        value=token,
-        httponly=True,       # prevents JavaScript access (safer)
-        secure=False,         # use HTTPS in production
-        samesite="lax" 
-         
+            key="access_token_fnol",
+            value=token,
+            httponly=True,
+            secure=False,   # ⚠️ set True in production
+            samesite="lax"
         )
     else:
         response.set_cookie(
             key="access_token_fnol",
             value=token,
-            httponly=True,       # prevents JavaScript access (safer)
-            max_age=1800,        # 30 minutes
+            httponly=True,
+            max_age=1800,
             expires=1800,
-            secure=False,         # use HTTPS in production
-            samesite="lax" 
-            
+            secure=False,   # ⚠️ set True in production
+            samesite="lax"
         )
 
     return {"message": "Logged in successfully"}
+
+
+@router.get("/me")
+async def read_users_me(current_user: dict = Depends(get_current_user)):
+    return current_user
 
 @router.post("/logout")
 async def logout(response: Response):

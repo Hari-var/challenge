@@ -22,7 +22,6 @@ import io
 from helpers.config import vehicle_images_path
 
 
-
 # `print(os.environ['tesseract'])`
 class Extract():
 
