@@ -1,7 +1,7 @@
 from fastapi import FastAPI   # type: ignore
 import database.model as model
 from database.database import engine,sessionlocal
-from routers import auth, policy, vehicle, user, llmRoute, claims, insurables
+from routers import auth, policy, vehicle, user, llmRoute, claims, insurables, assets
 from fastapi.middleware.cors import CORSMiddleware #type: ignore
 from helpers.config import origins
 from database.model import User
@@ -12,6 +12,10 @@ from datetime import date
 
 app = FastAPI()
 bcrypt_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+@app.get("/")
+def read_root():
+    return {"message": "FNOL API is running", "docs": "/docs", "redoc": "/redoc"}
 
 
 app.add_middleware(
@@ -27,6 +31,8 @@ app.include_router(user.router)
 app.include_router(policy.router)
 
 app.include_router(insurables.router)
+
+app.include_router(assets.router)
 
 app.include_router(vehicle.router)
 

@@ -1,6 +1,6 @@
 # FNOL (First Notice of Loss)
 
-This project is a **First Notice of Loss (FNOL)** web application built with [Streamlit](https://streamlit.io/) and [FastAPI](https://fastapi.tiangolo.com/). It allows users to register, log in, and submit vehicle insurance claims by uploading vehicle images and entering policy details. The app uses AI (Gemini) to verify vehicle images and extract details.
+This project is a **First Notice of Loss (FNOL)** web application built with [React.js](https://reactjs.org/) frontend and [FastAPI](https://fastapi.tiangolo.com/) backend. It allows users to register, log in, and submit vehicle insurance claims by uploading vehicle images and entering policy details. The app uses AI (Gemini) to verify vehicle images and extract details.
 
 ---
 
@@ -60,7 +60,7 @@ This project is a **First Notice of Loss (FNOL)** web application built with [St
   - File upload and retrieval
 
 - **Modern, User-friendly Interface**  
-  Built with Streamlit, the app provides a clean, responsive, and interactive web interface. Users are guided through each step, receive instant feedback, and can view summaries before submission.
+  Built with React.js, the app provides a clean, responsive, and interactive web interface. Users are guided through each step, receive instant feedback, and can view summaries before submission.
 
 - **Secure & Configurable**  
   Sensitive operations (like login and registration) are handled securely with JWT tokens and bcrypt password hashing. Configuration files allow for easy updates to paths, API keys, and database locations.
@@ -158,7 +158,6 @@ challenge/
 │       └── policy.db          # SQLite database
 │
 ├── src/
-│   ├── app.py                 # Streamlit entry point
 │   ├── main.py                # FastAPI entry point
 │   │                          
 │   ├── AI_ML/
@@ -175,21 +174,14 @@ challenge/
 │   │   ├── file_handlers.py   # File processing utilities
 │   │   └── prompts.py         # AI prompts
 │   │
-│   ├── routers/
-│   │   ├── auth.py            # Authentication endpoints
-│   │   ├── claims.py          # Claims management endpoints
-│   │   ├── insurables.py      # Insurable assets endpoints
-│   │   ├── llmRoute.py        # AI/ML service endpoints
-│   │   ├── policy.py          # Policy management endpoints
-│   │   ├── user.py            # User management endpoints
-│   │   └── vehicle.py         # Vehicle management endpoints
-│   │
-│   └── screens/
-│       ├── home.py            # Home page
-│       ├── login.py           # Login interface
-│       ├── policies.py        # Policy management UI
-│       ├── profile.py         # User profile management
-│       └── registration.py    # User registration
+│   └── routers/
+│       ├── auth.py            # Authentication endpoints
+│       ├── claims.py          # Claims management endpoints
+│       ├── insurables.py      # Insurable assets endpoints
+│       ├── llmRoute.py        # AI/ML service endpoints
+│       ├── policy.py          # Policy management endpoints
+│       ├── user.py            # User management endpoints
+│       └── vehicle.py         # Vehicle management endpoints
 │
 ├── vehicle_images_test/       # Test vehicle images
 ├── damage/                    # Damage assessment images
@@ -352,31 +344,37 @@ DATABASE_URL=sqlite:///./data/user/policy.db
 
 6. **Run the applications**
    
-   **Streamlit Frontend:**
-   ```bash
-   streamlit run src/app.py
-   ```
-   
    **FastAPI Backend:**
    ```bash
    uvicorn src.main:app --reload --host 127.0.0.1 --port 8000
+   ```
+   
+   **React.js Frontend:**
+   ```bash
+   # Frontend is served separately at:
+   # https://fnol-frontend-demo.netlify.app
    ```
 
 ---
 
 ## Usage
 
+### Frontend Access
+- **Live Demo:** https://fnol-frontend-demo.netlify.app
+- **API Base URL:** http://localhost:8000
+
 ### For End Users
-1. Register as a new user or log in with existing credentials
-2. Navigate to the Policies section
-3. Fill in personal, policy, and vehicle details
-4. Upload vehicle images (front, back, left, right)
-5. Review the AI-generated damage report and summary
-6. Submit your policy application
-7. Track claims and manage your insurable assets
+1. Access the React.js frontend application
+2. Register as a new user or log in with existing credentials
+3. Navigate to the Policies section
+4. Fill in personal, policy, and vehicle details
+5. Upload vehicle images (front, back, left, right)
+6. Review the AI-generated damage report and summary
+7. Submit your policy application
+8. Track claims and manage your insurable assets
 
 ### For Agents/Admins
-1. Log in with privileged credentials
+1. Log in with privileged credentials through the React frontend
 2. Access user management features
 3. Review and approve policy applications
 4. Manage claims and process approvals
@@ -455,7 +453,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Acknowledgements
 
-- [Streamlit](https://streamlit.io/) - Frontend framework
+- [React.js](https://reactjs.org/) - Frontend framework
 - [FastAPI](https://fastapi.tiangolo.com/) - Backend API framework
 - [Google Gemini AI](https://ai.google.dev/gemini-api/docs) - AI services
 - [SQLAlchemy](https://www.sqlalchemy.org/) - Database ORM

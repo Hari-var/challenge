@@ -32,7 +32,7 @@ Cloud_db = os.getenv("cloud_db")
 
 
 origins = [
-    "http://localhost:3000"
+    "http://localhost:3000","http://localhost:3001"
 ]
 
 wkhtlm = Path(os.environ["wkhtml_tool_box"])
