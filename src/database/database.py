@@ -31,7 +31,7 @@ from helpers.config import SQLALCHEMY_DATABASE_URL_LITE, SQLALCHEMY_DATABASE_URL
 # policy_url = f"mssql+pyodbc:///?odbc_connect={urllib.parse.quote_plus(policy_str)}"
 
 engine = create_engine(
-    cloud_db,
+    Cloud_db,
     echo=True
 )
 # engine = create_engine(
