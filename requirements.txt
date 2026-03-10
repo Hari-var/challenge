@@ -18,3 +18,10 @@ python-jose[cryptography]
 python-multipart
 google-generativeai
 starlette
+# Testing and code quality dependencies
+pytest
+pytest-cov
+flake8
+bandit
+safety
+pip-audit
